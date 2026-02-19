@@ -70,7 +70,7 @@
             <div id="dashboard-page" class="page-content">
                 <div class="chart-card"><canvas id="companyChart"></canvas></div>
                 <table>
-                    <thead><tr><th>ID</th><th>Company</th><th>Summary</th><th>Action</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Company</th><th>Summary</th><th>Sent At</th><th>Action</th></tr></thead>
                     <tbody id="ticketBody"></tbody>
                 </table>
             </div>
@@ -241,6 +241,9 @@
 
         document.getElementById('count-my-progress').innerText = myDone.length;
         document.getElementById('ticketBody').innerHTML = pending.map(r => `
+        const sTime = r.fields["Submission Time"] ? new Date(r.fields["Submission Time"]).toLocaleString('en-GB') : 'N/A';
+            const rTime = r.fields["Resolution Time"] ? new Date(r.fields["Resolution Time"]).toLocaleString('en-GB') : 'N/A';
+            return `<tr>
             <tr>
                 <td>#${r.fields["Ticket ID"] || ''}</td>
                 <td><b>${r.fields.Company || ''}</b></td>
@@ -333,6 +336,7 @@
         const fields = { "Status": document.getElementById('newStatus').value, "Resolution Note": document.getElementById('resDesc').value, "Handled By IT": user.Name };
         await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'PATCH', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
         closeModal(); loadData(user.Name);
+        const now = new Date().toISOString();
     }
     async function deleteRecord(id) { if(confirm("Delete record?")) { await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${T}`} }); closeModal(); loadData(JSON.parse(localStorage.getItem('hakaUser')).Name); } }
     async function addNewAdmin() {
