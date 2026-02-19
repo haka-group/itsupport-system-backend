@@ -164,7 +164,11 @@
     </div>
 
 <script>
-    const T = "patSfE4E7BGq95o5V.765ef3c9e82a7fb6fe26152bd2e696c5224ebb2cd0593b1a955b38f9eaf2cad0", B = "appyQQt9Dg0MP0zVK", U = "users", L = "it system 2";
+ 
+    const T = "patSfE4E7BGq95o5V.765ef3c9e82a7fb6fe26152bd2e696c5224ebb2cd0593b1a955b38f9eaf2cad0", 
+          B = "appyQQt9Dg0MP0zVK", 
+          U = "users", 
+          L = "it system 2";
     let charts = {}, globalTickets = [];
 
     window.onload = () => { 
@@ -208,28 +212,6 @@
         loadData(user.Name);
     }
 
-    async function loadActiveAdmins() {
-        const res = await fetch(`https://api.airtable.com/v0/${B}/${U}`, { headers: {'Authorization':`Bearer ${T}`} });
-        const data = await res.json();
-        const currentUser = JSON.parse(localStorage.getItem('hakaUser'));
-        document.getElementById('activeAdminsBody').innerHTML = (data.records || []).map(u => {
-            const isSelf = u.id === currentUser.airtableId;
-            return `<tr>
-                <td>${u.fields.Name} ${isSelf ? '<small>(Me)</small>' : ''}</td>
-                <td>${u.fields.Email}</td>
-                <td>${u.fields.Role}</td>
-                <td>${!isSelf ? `<button class="btn-del" onclick="deleteAdmin('${u.id}')">Delete</button>` : '-'}</td>
-            </tr>`;
-        }).join('');
-    }
-
-    async function deleteAdmin(id) {
-        if(confirm("Permanently delete this admin?")) {
-            await fetch(`https://api.airtable.com/v0/${B}/${U}/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${T}`} });
-            loadActiveAdmins();
-        }
-    }
-
     async function loadData(adminName) {
         const res = await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}?sort[0][field]=Ticket ID&sort[0][direction]=desc`, { headers: {'Authorization':`Bearer ${T}`} });
         const data = await res.json();
@@ -256,14 +238,16 @@
         if(isSuper) loadTeamStats();
     }
 
+    // --- وظيفة فتح التذكرة: تعرض "وقت الإرسال" للأدمن ---
     function openSolve(id) {
         const t = globalTickets.find(x => x.id === id).fields;
+        
+        // جلب وقت الإرسال من حقل Submission Time
         const subTime = t["Submission Time"] ? new Date(t["Submission Time"]).toLocaleString() : 'N/A';
-        console.log("Ticket submitted at: " + subTime); 
         
         document.getElementById('activeRecId').value = id;
         document.getElementById('det-id').innerText = "#" + (t["Ticket ID"] || 'N/A');
-        document.getElementById('det-name').innerText = t["Employee Full Name"] || 'N/A';
+        document.getElementById('det-name').innerText = (t["Employee Full Name"] || 'N/A') + " (Sent: " + subTime + ")";
         document.getElementById('det-desc').innerText = t["Description"] || 'N/A';
         
         const url = t.Attachment;
@@ -273,43 +257,41 @@
         document.getElementById('solveModal').style.display = 'block';
     }
 
-    function viewHistory(name) {
-        const solved = globalTickets.filter(t => t.fields["Handled By IT"] === name && t.fields.Status === 'Done');
-        document.getElementById('hist-title').innerText = name + "'s Records";
-        document.getElementById('hist-list').innerHTML = solved.map(t => {
-            const f = t.fields;
-            return `
-                <div class="hist-card">
-                    <div style="display:flex; justify-content:space-between;">
-                        <h4 style="margin:0; color:#166e48;">#${f["Ticket ID"]} - ${f.Company}</h4>
-                        <button class="btn-del" onclick="deleteRecord('${t.id}')">Remove Log</button>
-                    </div>
-                    <div style="font-size:12px; margin:5px 0;">Staff: <b>${f["Employee Full Name"]}</b></div>
-                    <div class="box-problem"><strong>Problem:</strong><br>${f.Description || 'N/A'}</div>
-                    <div class="box-solution"><strong>Solution:</strong><br>${f["Resolution Note"] || 'N/A'}</div>
-                </div>`;
-        }).join('') || '<p style="text-align:center;">No completed tasks.</p>';
-        document.getElementById('historyModal').style.display = 'block';
+    // --- وظيفة إرسال الحل: تسجل "وقت الحل" تلقائياً في التايم ستامب ---
+    async function submitResolution() {
+        const id = document.getElementById('activeRecId').value;
+        const user = JSON.parse(localStorage.getItem('hakaUser'));
+        
+        // توليد وقت الحل الآن لإرساله لـ Resolution Time
+        const resTime = new Date().toISOString(); 
+
+        const fields = { 
+            "Status": document.getElementById('newStatus').value, 
+            "Resolution Note": document.getElementById('resDesc').value, 
+            "Handled By IT": user.Name,
+            "Resolution Time": resTime 
+        };
+
+        await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { 
+            method:'PATCH', 
+            headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, 
+            body:JSON.stringify({fields}) 
+        });
+        
+        alert("Solution Submitted & Time Logged!");
+        closeModal(); 
+        loadData(user.Name);
     }
 
-    function exportToExcel() {
-        const data = globalTickets.map(t => ({
-            "ID": t.fields["Ticket ID"], "Company": t.fields.Company, "Employee": t.fields["Employee Full Name"],
-            "Problem": t.fields.Description, "Solution": t.fields["Resolution Note"], "IT_Admin": t.fields["Handled By IT"], "Status": t.fields.Status
-        }));
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "IT_Logs");
-        XLSX.writeFile(wb, "HAKA_System_Report.xlsx");
-    }
-
-    function exportToPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4');
-        const rows = globalTickets.map(t => [t.fields["Ticket ID"], t.fields.Company, t.fields["Employee Full Name"], t.fields.Status, t.fields["Handled By IT"]]);
-        doc.text("HAKA Group IT Performance Report", 14, 15);
-        doc.autoTable({ head: [['ID', 'Company', 'Employee', 'Status', 'Admin']], body: rows, startY: 22, theme: 'grid', headStyles: {fillColor:[22, 110, 72]} });
-        doc.save("HAKA_Team_Report.pdf");
+    // --- بقية الوظائف الأساسية ---
+    async function loadActiveAdmins() {
+        const res = await fetch(`https://api.airtable.com/v0/${B}/${U}`, { headers: {'Authorization':`Bearer ${T}`} });
+        const data = await res.json();
+        const currentUser = JSON.parse(localStorage.getItem('hakaUser'));
+        document.getElementById('activeAdminsBody').innerHTML = (data.records || []).map(u => {
+            const isSelf = u.id === currentUser.airtableId;
+            return `<tr><td>${u.fields.Name} ${isSelf ? '<small>(Me)</small>' : ''}</td><td>${u.fields.Email}</td><td>${u.fields.Role}</td><td>${!isSelf ? `<button class="btn-del" onclick="deleteAdmin('${u.id}')">Delete</button>` : '-'}</td></tr>`;
+        }).join('');
     }
 
     function renderCharts(recs) {
@@ -328,39 +310,16 @@
             teamPerf[u.fields.Name] = count;
             return `<tr><td>${u.fields.Name}</td><td>${u.fields.Email}</td><td><b>${count} Solved</b></td><td><button class="btn-act" onclick="viewHistory('${u.fields.Name}')" style="background:#f0f4f3; color:#166e48; padding:5px 10px; font-size:11px;">Details</button></td></tr>`;
         }).join('');
-        const ctxT = document.getElementById('teamChart').getContext('2d');
-        if(charts.t) charts.t.destroy();
-        charts.t = new Chart(ctxT, { type: 'bar', data: { labels: Object.keys(teamPerf), datasets: [{ label: 'Performance', data: Object.values(teamPerf), backgroundColor: '#166e48' }] }, options: { maintainAspectRatio: false } });
     }
 
-    async function submitResolution() {
-        const id = document.getElementById('activeRecId').value, user = JSON.parse(localStorage.getItem('hakaUser'));
-        const resTime = new Date().toISOString();
-        const fields = { 
-            "Status": document.getElementById('newStatus').value, 
-            "Resolution Note": document.getElementById('resDesc').value, 
-            "Handled By IT": user.Name, 
-            "Resolution Time": resTime 
-        };
-        await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'PATCH', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
-        closeModal(); loadData(user.Name);
+    function exportToExcel() {
+        const data = globalTickets.map(t => ({ "ID": t.fields["Ticket ID"], "Company": t.fields.Company, "Status": t.fields.Status, "Handled By": t.fields["Handled By IT"] }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "IT_Logs");
+        XLSX.writeFile(wb, "HAKA_System_Report.xlsx");
     }
-    
-    async function deleteRecord(id) { if(confirm("Delete record?")) { await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${T}`} }); closeModal(); loadData(JSON.parse(localStorage.getItem('hakaUser')).Name); } }
-    
-    async function addNewAdmin() {
-        const fields = { "Name": document.getElementById('add-name').value, "Email": document.getElementById('add-email').value, "Password": document.getElementById('add-pass').value, "Role": document.getElementById('add-role').value };
-        await fetch(`https://api.airtable.com/v0/${B}/${U}`, { method:'POST', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
-        alert("Admin added!"); loadActiveAdmins();
-    }
-    
-    async function handleHandover() {
-        const user = JSON.parse(localStorage.getItem('hakaUser')), e = document.getElementById('h-email').value, op = document.getElementById('h-old-pass').value, np = document.getElementById('h-new-pass').value;
-        if (e !== user.Email || op !== user.Password) return alert("Verify Error!");
-        await fetch(`https://api.airtable.com/v0/${B}/${U}/${user.airtableId}`, { method:'PATCH', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields:{"Password":np, "Email":e}}) });
-        logout();
-    }
-    
+
     function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
     function logout() { localStorage.clear(); sessionStorage.clear(); location.reload(); }
 </script>
