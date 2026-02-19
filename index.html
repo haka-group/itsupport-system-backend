@@ -70,7 +70,7 @@
             <div id="dashboard-page" class="page-content">
                 <div class="chart-card"><canvas id="companyChart"></canvas></div>
                 <table>
-                    <thead><tr><th>ID</th><th>Company</th><th>Summary</th><th>Action</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Submission Time</th><th>Company</th><th>Summary</th><th>Action</th></tr></thead>
                     <tbody id="ticketBody"></tbody>
                 </table>
             </div>
@@ -80,7 +80,7 @@
                     Total Solved by You: <b id="count-my-progress">0</b>
                 </div>
                 <table>
-                    <thead><tr><th>ID</th><th>Company</th><th>Resolution Note</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Company</th><th>Resolution Note</th><th>Resolution Time</th></tr></thead>
                     <tbody id="myHistoryBody"></tbody>
                 </table>
             </div>
@@ -143,6 +143,7 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f9f9f9; padding:15px; border-radius:12px;">
                     <div><label style="font-size:10px; color:#888;">TICKET ID</label><div id="det-id" style="font-weight:600;"></div></div>
                     <div><label style="font-size:10px; color:#888;">EMPLOYEE</label><div id="det-name" style="font-weight:600;"></div></div>
+                    <div style="grid-column: span 2;"><label style="font-size:10px; color:#888;">SUBMITTED AT</label><div id="det-sub-time" style="font-weight:600; color:#166e48;"></div></div>
                 </div>
                 <div id="det-desc" class="box-problem"></div>
                 <div id="det-attach" class="img-preview"></div>
@@ -174,6 +175,12 @@
             showPage(sessionStorage.getItem('lastPage') || 'dashboard');
         }
     };
+
+    function formatDateTime(d) {
+        if(!d) return "N/A";
+        const date = new Date(d);
+        return date.toLocaleString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
 
     function showPage(pId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
@@ -240,9 +247,11 @@
         const isSuper = JSON.parse(localStorage.getItem('hakaUser')).Role === 'superadmin';
 
         document.getElementById('count-my-progress').innerText = myDone.length;
+        
         document.getElementById('ticketBody').innerHTML = pending.map(r => `
             <tr>
                 <td>#${r.fields["Ticket ID"] || ''}</td>
+                <td style="color:#666; font-size:11px;">${formatDateTime(r.fields["Submission Time"])}</td>
                 <td><b>${r.fields.Company || ''}</b></td>
                 <td>${(r.fields.Description||"").substring(0,40)}...</td>
                 <td>
@@ -250,7 +259,14 @@
                     ${isSuper ? `<button class="btn-del" onclick="deleteRecord('${r.id}')">DEL</button>` : ''}
                 </td>
             </tr>`).join('');
-        document.getElementById('myHistoryBody').innerHTML = myDone.map(r => `<tr><td>#${r.fields["Ticket ID"]}</td><td>${r.fields.Company}</td><td>${r.fields["Resolution Note"]||""}</td></tr>`).join('');
+
+        document.getElementById('myHistoryBody').innerHTML = myDone.map(r => `
+            <tr>
+                <td>#${r.fields["Ticket ID"]}</td>
+                <td>${r.fields.Company}</td>
+                <td>${r.fields["Resolution Note"]||""}</td>
+                <td style="color:#166e48; font-weight:500;">${formatDateTime(r.fields["Resolution Time"])}</td>
+            </tr>`).join('');
         
         renderCharts(globalTickets);
         if(isSuper) loadTeamStats();
@@ -261,6 +277,7 @@
         document.getElementById('activeRecId').value = id;
         document.getElementById('det-id').innerText = "#" + (t["Ticket ID"] || 'N/A');
         document.getElementById('det-name').innerText = t["Employee Full Name"] || 'N/A';
+        document.getElementById('det-sub-time').innerText = formatDateTime(t["Submission Time"]); 
         document.getElementById('det-desc').innerText = t["Description"] || 'N/A';
         const url = t.Attachment;
         document.getElementById('det-attach').innerHTML = (url && typeof url === 'string') ? 
@@ -279,7 +296,10 @@
                         <h4 style="margin:0; color:#166e48;">#${f["Ticket ID"]} - ${f.Company}</h4>
                         <button class="btn-del" onclick="deleteRecord('${t.id}')">Remove Log</button>
                     </div>
-                    <div style="font-size:12px; margin:5px 0;">Staff: <b>${f["Employee Full Name"]}</b></div>
+                    <div style="font-size:11px; margin-top:8px; color:#555; background:#f0f0f0; padding:5px; border-radius:5px;">
+                        <b>Submitted:</b> ${formatDateTime(f["Submission Time"])} | <b>Resolved:</b> ${formatDateTime(f["Resolution Time"])}
+                    </div>
+                    <div style="font-size:12px; margin:10px 0;">Staff: <b>${f["Employee Full Name"]}</b></div>
                     <div class="box-problem"><strong>Problem:</strong><br>${f.Description || 'N/A'}</div>
                     <div class="box-solution"><strong>Solution:</strong><br>${f["Resolution Note"] || 'N/A'}</div>
                 </div>`;
@@ -289,22 +309,42 @@
 
     function exportToExcel() {
         const data = globalTickets.map(t => ({
-            "ID": t.fields["Ticket ID"], "Company": t.fields.Company, "Employee": t.fields["Employee Full Name"],
-            "Problem": t.fields.Description, "Solution": t.fields["Resolution Note"], "IT_Admin": t.fields["Handled By IT"], "Status": t.fields.Status
+            "Ticket ID": t.fields["Ticket ID"], 
+            "Submission Time": formatDateTime(t.fields["Submission Time"]),
+            "Resolution Time": formatDateTime(t.fields["Resolution Time"]),
+            "Company": t.fields.Company, 
+            "Employee": t.fields["Employee Full Name"],
+            "Problem": t.fields.Description, 
+            "Solution": t.fields["Resolution Note"], 
+            "IT Admin": t.fields["Handled By IT"], 
+            "Status": t.fields.Status
         }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "IT_Logs");
+        XLSX.utils.book_append_sheet(wb, ws, "Full IT Logs");
         XLSX.writeFile(wb, "HAKA_System_Report.xlsx");
     }
 
     function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('l', 'mm', 'a4');
-        const rows = globalTickets.map(t => [t.fields["Ticket ID"], t.fields.Company, t.fields["Employee Full Name"], t.fields.Status, t.fields["Handled By IT"]]);
-        doc.text("HAKA Group IT Performance Report", 14, 15);
-        doc.autoTable({ head: [['ID', 'Company', 'Employee', 'Status', 'Admin']], body: rows, startY: 22, theme: 'grid', headStyles: {fillColor:[22, 110, 72]} });
-        doc.save("HAKA_Team_Report.pdf");
+        const rows = globalTickets.map(t => [
+            t.fields["Ticket ID"], 
+            formatDateTime(t.fields["Submission Time"]),
+            formatDateTime(t.fields["Resolution Time"]),
+            t.fields.Company, 
+            t.fields.Status, 
+            t.fields["Handled By IT"]
+        ]);
+        doc.text("HAKA Group IT Monitoring Report", 14, 15);
+        doc.autoTable({ 
+            head: [['ID', 'Submitted', 'Resolved', 'Company', 'Status', 'Admin']], 
+            body: rows, 
+            startY: 22, 
+            theme: 'grid', 
+            headStyles: {fillColor:[22, 110, 72]} 
+        });
+        doc.save("HAKA_Admin_Report.pdf");
     }
 
     function renderCharts(recs) {
@@ -330,7 +370,13 @@
 
     async function submitResolution() {
         const id = document.getElementById('activeRecId').value, user = JSON.parse(localStorage.getItem('hakaUser'));
-        const fields = { "Status": document.getElementById('newStatus').value, "Resolution Note": document.getElementById('resDesc').value, "Handled By IT": user.Name };
+        const now = new Date().toISOString(); 
+        const fields = { 
+            "Status": document.getElementById('newStatus').value, 
+            "Resolution Note": document.getElementById('resDesc').value, 
+            "Handled By IT": user.Name,
+            "Resolution Time": now 
+        };
         await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'PATCH', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
         closeModal(); loadData(user.Name);
     }
