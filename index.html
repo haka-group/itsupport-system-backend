@@ -256,10 +256,9 @@
         if(isSuper) loadTeamStats();
     }
 
-   function openSolve(id) {
+    function openSolve(id) {
         const t = globalTickets.find(x => x.id === id).fields;
         const subTime = t["Submission Time"] ? new Date(t["Submission Time"]).toLocaleString() : 'N/A';
-        
         console.log("Ticket submitted at: " + subTime); 
         
         document.getElementById('activeRecId').value = id;
@@ -337,22 +336,31 @@
     async function submitResolution() {
         const id = document.getElementById('activeRecId').value, user = JSON.parse(localStorage.getItem('hakaUser'));
         const resTime = new Date().toISOString();
-        const fields = { "Status": document.getElementById('newStatus').value, "Resolution Note": document.getElementById('resDesc').value, "Handled By IT": user.Name, "Resolution Time": resTime};
+        const fields = { 
+            "Status": document.getElementById('newStatus').value, 
+            "Resolution Note": document.getElementById('resDesc').value, 
+            "Handled By IT": user.Name, 
+            "Resolution Time": resTime 
+        };
         await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'PATCH', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
         closeModal(); loadData(user.Name);
     }
+    
     async function deleteRecord(id) { if(confirm("Delete record?")) { await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${T}`} }); closeModal(); loadData(JSON.parse(localStorage.getItem('hakaUser')).Name); } }
+    
     async function addNewAdmin() {
         const fields = { "Name": document.getElementById('add-name').value, "Email": document.getElementById('add-email').value, "Password": document.getElementById('add-pass').value, "Role": document.getElementById('add-role').value };
         await fetch(`https://api.airtable.com/v0/${B}/${U}`, { method:'POST', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
         alert("Admin added!"); loadActiveAdmins();
     }
+    
     async function handleHandover() {
         const user = JSON.parse(localStorage.getItem('hakaUser')), e = document.getElementById('h-email').value, op = document.getElementById('h-old-pass').value, np = document.getElementById('h-new-pass').value;
         if (e !== user.Email || op !== user.Password) return alert("Verify Error!");
         await fetch(`https://api.airtable.com/v0/${B}/${U}/${user.airtableId}`, { method:'PATCH', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields:{"Password":np, "Email":e}}) });
         logout();
     }
+    
     function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
     function logout() { localStorage.clear(); sessionStorage.clear(); location.reload(); }
 </script>
