@@ -260,7 +260,6 @@
         const t = globalTickets.find(x => x.id === id).fields;
         const subTime = t["Submission Time"] ? new Date(t["Submission Time"]).toLocaleString() : 'N/A';
     console.log("Ticket submitted at: " + subTime); 
-}
         document.getElementById('activeRecId').value = id;
         document.getElementById('det-id').innerText = "#" + (t["Ticket ID"] || 'N/A');
         document.getElementById('det-name').innerText = t["Employee Full Name"] || 'N/A';
