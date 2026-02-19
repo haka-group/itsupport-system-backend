@@ -256,17 +256,21 @@
         if(isSuper) loadTeamStats();
     }
 
-    function openSolve(id) {
+   function openSolve(id) {
         const t = globalTickets.find(x => x.id === id).fields;
         const subTime = t["Submission Time"] ? new Date(t["Submission Time"]).toLocaleString() : 'N/A';
-    console.log("Ticket submitted at: " + subTime); 
+        
+        console.log("Ticket submitted at: " + subTime); 
+        
         document.getElementById('activeRecId').value = id;
         document.getElementById('det-id').innerText = "#" + (t["Ticket ID"] || 'N/A');
         document.getElementById('det-name').innerText = t["Employee Full Name"] || 'N/A';
         document.getElementById('det-desc').innerText = t["Description"] || 'N/A';
+        
         const url = t.Attachment;
         document.getElementById('det-attach').innerHTML = (url && typeof url === 'string') ? 
             `<img src="${url}" onclick="window.open('${url}')">` : "<small style='color:#999'>No External Attachment Link</small>";
+        
         document.getElementById('solveModal').style.display = 'block';
     }
 
