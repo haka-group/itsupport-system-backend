@@ -30,12 +30,7 @@
         .modal-content { background: #fff; margin: 2% auto; width: 750px; border-radius: 25px; overflow: hidden; }
         .modal-header { background: var(--primary); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 25px; max-height: 75vh; overflow-y: auto; }
-        .hist-card { background: #fff; padding: 20px; border-radius: 15px; margin-bottom: 20px; border-left: 6px solid #166e48; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .box-problem { background: #fff8e1; color: #856404; padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 13px; border: 1px solid #ffeeba; }
-        .box-solution { background: #e8f5e9; color: #1b5e20; padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 13px; border: 1px solid #c8e6c9; }
-        .img-preview { background: #f9f9f9; border-radius: 10px; padding: 10px; text-align: center; margin-top: 15px; border: 1px dashed #ddd; }
-        .img-preview img { max-width: 100%; border-radius: 8px; max-height: 300px; cursor: pointer; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1.5px solid #e0e6e4; box-sizing: border-box; }
         .btn-act { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
         .btn-del { background: #ffebee; color: #d32f2f; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; }
     </style>
@@ -70,7 +65,15 @@
             <div id="dashboard-page" class="page-content">
                 <div class="chart-card"><canvas id="companyChart"></canvas></div>
                 <table>
-                    <thead><tr><th>ID</th><th>Company</th><th>Summary</th><th>Action</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Company</th>
+                            <th>Sent At</th>
+                            <th>Summary</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
                     <tbody id="ticketBody"></tbody>
                 </table>
             </div>
@@ -80,21 +83,25 @@
                     Total Solved by You: <b id="count-my-progress">0</b>
                 </div>
                 <table>
-                    <thead><tr><th>ID</th><th>Company</th><th>Resolution Note</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Company</th>
+                            <th>Sent At</th>
+                            <th>Solved At</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
                     <tbody id="myHistoryBody"></tbody>
                 </table>
             </div>
 
             <div id="team-page" class="page-content">
                 <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; justify-content: space-between;">
-                    <h4 style="margin:0;">Team Performance & Reporting</h4>
+                    <h4 style="margin:0;">Team Performance</h4>
                     <div id="export-controls" style="display: flex; gap: 10px;">
-                        <button onclick="exportToExcel()" class="btn-act" style="background:#2e7d32; font-size:12px;">
-                            <span class="material-icons-outlined">table_view</span> Excel Report
-                        </button>
-                        <button onclick="exportToPDF()" class="btn-act" style="background:#c62828; font-size:12px;">
-                            <span class="material-icons-outlined">picture_as_pdf</span> PDF Report
-                        </button>
+                        <button onclick="exportToExcel()" class="btn-act" style="background:#2e7d32; font-size:12px;"><span class="material-icons-outlined">table_view</span> Excel</button>
+                        <button onclick="exportToPDF()" class="btn-act" style="background:#c62828; font-size:12px;"><span class="material-icons-outlined">picture_as_pdf</span> PDF</button>
                     </div>
                 </div>
                 <div class="chart-card"><canvas id="teamChart"></canvas></div>
@@ -105,34 +112,7 @@
             </div>
 
             <div id="security-page" class="page-content">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                    <div style="background:#fff; padding:25px; border-radius:20px;">
-                        <h4>Update My Security</h4>
-                        <input type="email" id="h-email" placeholder="Current Email">
-                        <input type="password" id="h-old-pass" placeholder="Current Password">
-                        <input type="password" id="h-new-pass" placeholder="New Password">
-                        <button onclick="handleHandover()" class="btn-act" style="width:100%; margin-top:15px; justify-content:center;">Save & Logout</button>
-                    </div>
-                    <div style="background:#fff; padding:25px; border-radius:20px;">
-                        <h4>Register New Admin</h4>
-                        <input type="text" id="add-name" placeholder="Full Name">
-                        <input type="email" id="add-email" placeholder="Work Email">
-                        <input type="password" id="add-pass" placeholder="Password">
-                        <select id="add-role"><option value="admin">Admin</option><option value="superadmin">Super Admin</option></select>
-                        <button onclick="addNewAdmin()" class="btn-act" style="width:100%; margin-top:15px; background:#000; justify-content:center;">Add Admin</button>
-                    </div>
                 </div>
-
-                <div style="background:#fff; padding:25px; border-radius:20px; margin-top:20px;">
-                    <h4 style="margin-top:0; color:#166e48;">Active Admins Management</h4>
-                    <table>
-                        <thead>
-                            <tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr>
-                        </thead>
-                        <tbody id="activeAdminsBody"></tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -140,35 +120,18 @@
         <div class="modal-content">
             <div class="modal-header"><h3>Process Ticket</h3><span class="material-icons-outlined" onclick="closeModal()" style="cursor:pointer;">close</span></div>
             <div class="modal-body">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f9f9f9; padding:15px; border-radius:12px;">
-                    <div><label style="font-size:10px; color:#888;">TICKET ID</label><div id="det-id" style="font-weight:600;"></div></div>
-                    <div><label style="font-size:10px; color:#888;">EMPLOYEE</label><div id="det-name" style="font-weight:600;"></div></div>
-                </div>
+                <div id="det-id-label"></div>
                 <div id="det-desc" class="box-problem"></div>
-                <div id="det-attach" class="img-preview"></div>
-                
-                <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
                 <input type="hidden" id="activeRecId">
                 <select id="newStatus"><option value="Done">Resolved</option><option value="Incomplete">Needs Info</option></select>
-                <textarea id="resDesc" rows="3" placeholder="Explain the technical resolution..." style="margin-top:10px;"></textarea>
-                <button onclick="submitResolution()" class="btn-act" style="width:100%; margin-top:15px; justify-content:center; padding:15px;">Submit Resolution</button>
+                <textarea id="resDesc" rows="3" placeholder="Technical resolution note..."></textarea>
+                <button onclick="submitResolution()" class="btn-act" style="width:100%; margin-top:15px; justify-content:center;">Submit Resolution</button>
             </div>
         </div>
     </div>
 
-    <div id="historyModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h3 id="hist-title">History</h3><span class="material-icons-outlined" onclick="closeModal()" style="cursor:pointer;">close</span></div>
-            <div class="modal-body" id="hist-list"></div>
-        </div>
-    </div>
-
 <script>
- 
-    const T = "patSfE4E7BGq95o5V.765ef3c9e82a7fb6fe26152bd2e696c5224ebb2cd0593b1a955b38f9eaf2cad0", 
-          B = "appyQQt9Dg0MP0zVK", 
-          U = "users", 
-          L = "it system 2";
+    const T = "patSfE4E7BGq95o5V.765ef3c9e82a7fb6fe26152bd2e696c5224ebb2cd0593b1a955b38f9eaf2cad0", B = "appyQQt9Dg0MP0zVK", U = "users", L = "it system 2";
     let charts = {}, globalTickets = [];
 
     window.onload = () => { 
@@ -205,10 +168,7 @@
         document.getElementById('login-page').style.display = 'none';
         document.getElementById('admin-dashboard').style.display = 'flex';
         document.getElementById('adminDisplayName').innerText = user.Name;
-        if (user.Role === 'superadmin') {
-            document.getElementById('super-menu').style.display = 'block';
-            loadActiveAdmins();
-        }
+        if (user.Role === 'superadmin') document.getElementById('super-menu').style.display = 'block';
         loadData(user.Name);
     }
 
@@ -221,55 +181,53 @@
         const myDone = globalTickets.filter(r => r.fields.Status === 'Done' && r.fields["Handled By IT"] === adminName);
         const isSuper = JSON.parse(localStorage.getItem('hakaUser')).Role === 'superadmin';
 
-        document.getElementById('count-my-progress').innerText = myDone.length;
-        document.getElementById('ticketBody').innerHTML = pending.map(r => `
-            <tr>
+        // رسم التذاكر الجديدة مع وقت الإرسال
+        document.getElementById('ticketBody').innerHTML = pending.map(r => {
+            const sTime = r.fields["Submission Time"] ? new Date(r.fields["Submission Time"]).toLocaleString('en-GB', {hour:'2-digit', minute:'2-digit'}) : 'N/A';
+            return `<tr>
                 <td>#${r.fields["Ticket ID"] || ''}</td>
                 <td><b>${r.fields.Company || ''}</b></td>
-                <td>${(r.fields.Description||"").substring(0,40)}...</td>
-                <td>
-                    <button class="btn-act" onclick="openSolve('${r.id}')" style="padding:5px 10px; font-size:11px;">PROCESS</button>
-                    ${isSuper ? `<button class="btn-del" onclick="deleteRecord('${r.id}')">DEL</button>` : ''}
-                </td>
-            </tr>`).join('');
-        document.getElementById('myHistoryBody').innerHTML = myDone.map(r => `<tr><td>#${r.fields["Ticket ID"]}</td><td>${r.fields.Company}</td><td>${r.fields["Resolution Note"]||""}</td></tr>`).join('');
+                <td style="color:#666; font-size:11px;">${sTime}</td>
+                <td>${(r.fields.Description||"").substring(0,30)}...</td>
+                <td><button class="btn-act" onclick="openSolve('${r.id}')" style="padding:5px 10px; font-size:11px;">PROCESS</button></td>
+            </tr>`;
+        }).join('');
+
+        // رسم تاريخ الحل الشخصي مع وقت الإرسال ووقت الحل
+        document.getElementById('count-my-progress').innerText = myDone.length;
+        document.getElementById('myHistoryBody').innerHTML = myDone.map(r => {
+            const sTime = r.fields["Submission Time"] ? new Date(r.fields["Submission Time"]).toLocaleString('en-GB') : 'N/A';
+            const rTime = r.fields["Resolution Time"] ? new Date(r.fields["Resolution Time"]).toLocaleString('en-GB') : 'N/A';
+            return `<tr>
+                <td>#${r.fields["Ticket ID"]}</td>
+                <td>${r.fields.Company}</td>
+                <td style="font-size:11px;">${sTime}</td>
+                <td style="font-size:11px; color:#166e48; font-weight:bold;">${rTime}</td>
+                <td>${r.fields["Resolution Note"]||""}</td>
+            </tr>`;
+        }).join('');
         
         renderCharts(globalTickets);
-        if(isSuper) loadTeamStats();
     }
 
-    // --- وظيفة فتح التذكرة: تعرض "وقت الإرسال" للأدمن ---
     function openSolve(id) {
         const t = globalTickets.find(x => x.id === id).fields;
-        
-        // جلب وقت الإرسال من حقل Submission Time
-        const subTime = t["Submission Time"] ? new Date(t["Submission Time"]).toLocaleString() : 'N/A';
-        
         document.getElementById('activeRecId').value = id;
-        document.getElementById('det-id').innerText = "#" + (t["Ticket ID"] || 'N/A');
-        document.getElementById('det-name').innerText = (t["Employee Full Name"] || 'N/A') + " (Sent: " + subTime + ")";
-        document.getElementById('det-desc').innerText = t["Description"] || 'N/A';
-        
-        const url = t.Attachment;
-        document.getElementById('det-attach').innerHTML = (url && typeof url === 'string') ? 
-            `<img src="${url}" onclick="window.open('${url}')">` : "<small style='color:#999'>No External Attachment Link</small>";
-        
+        document.getElementById('det-id-label').innerHTML = `<b>#${t["Ticket ID"]}</b> - ${t["Employee Full Name"]}`;
+        document.getElementById('det-desc').innerText = t["Description"];
         document.getElementById('solveModal').style.display = 'block';
     }
 
-    // --- وظيفة إرسال الحل: تسجل "وقت الحل" تلقائياً في التايم ستامب ---
     async function submitResolution() {
         const id = document.getElementById('activeRecId').value;
         const user = JSON.parse(localStorage.getItem('hakaUser'));
-        
-        // توليد وقت الحل الآن لإرساله لـ Resolution Time
-        const resTime = new Date().toISOString(); 
+        const now = new Date().toISOString(); // تسجيل وقت الحل الآن
 
         const fields = { 
             "Status": document.getElementById('newStatus').value, 
             "Resolution Note": document.getElementById('resDesc').value, 
             "Handled By IT": user.Name,
-            "Resolution Time": resTime 
+            "Resolution Time": now 
         };
 
         await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { 
@@ -277,51 +235,36 @@
             headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, 
             body:JSON.stringify({fields}) 
         });
-        
-        alert("Solution Submitted & Time Logged!");
-        closeModal(); 
-        loadData(user.Name);
-    }
-
-    // --- بقية الوظائف الأساسية ---
-    async function loadActiveAdmins() {
-        const res = await fetch(`https://api.airtable.com/v0/${B}/${U}`, { headers: {'Authorization':`Bearer ${T}`} });
-        const data = await res.json();
-        const currentUser = JSON.parse(localStorage.getItem('hakaUser'));
-        document.getElementById('activeAdminsBody').innerHTML = (data.records || []).map(u => {
-            const isSelf = u.id === currentUser.airtableId;
-            return `<tr><td>${u.fields.Name} ${isSelf ? '<small>(Me)</small>' : ''}</td><td>${u.fields.Email}</td><td>${u.fields.Role}</td><td>${!isSelf ? `<button class="btn-del" onclick="deleteAdmin('${u.id}')">Delete</button>` : '-'}</td></tr>`;
-        }).join('');
-    }
-
-    function renderCharts(recs) {
-        const counts = {}; recs.forEach(r => { if(r.fields.Company) counts[r.fields.Company] = (counts[r.fields.Company]||0)+1; });
-        const ctx = document.getElementById('companyChart').getContext('2d');
-        if(charts.c) charts.c.destroy();
-        charts.c = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(counts), datasets: [{ label: 'Tickets', data: Object.values(counts), backgroundColor: '#166e48' }] }, options: { maintainAspectRatio: false } });
-    }
-
-    async function loadTeamStats() {
-        const res = await fetch(`https://api.airtable.com/v0/${B}/${U}`, { headers: {'Authorization':`Bearer ${T}`} });
-        const data = await res.json();
-        const teamPerf = {};
-        document.getElementById('teamBody').innerHTML = (data.records||[]).map(u => {
-            const count = globalTickets.filter(t => t.fields["Handled By IT"] === u.fields.Name && t.fields.Status === 'Done').length;
-            teamPerf[u.fields.Name] = count;
-            return `<tr><td>${u.fields.Name}</td><td>${u.fields.Email}</td><td><b>${count} Solved</b></td><td><button class="btn-act" onclick="viewHistory('${u.fields.Name}')" style="background:#f0f4f3; color:#166e48; padding:5px 10px; font-size:11px;">Details</button></td></tr>`;
-        }).join('');
+        alert("Time Logged Successfully!");
+        closeModal(); loadData(user.Name);
     }
 
     function exportToExcel() {
-        const data = globalTickets.map(t => ({ "ID": t.fields["Ticket ID"], "Company": t.fields.Company, "Status": t.fields.Status, "Handled By": t.fields["Handled By IT"] }));
+        const data = globalTickets.map(t => ({
+            "ID": t.fields["Ticket ID"],
+            "Company": t.fields.Company,
+            "Submitted At": t.fields["Submission Time"],
+            "Resolved At": t.fields["Resolution Time"],
+            "Admin": t.fields["Handled By IT"],
+            "Status": t.fields.Status
+        }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "IT_Logs");
+        XLSX.utils.book_append_sheet(wb, ws, "Reports");
         XLSX.writeFile(wb, "HAKA_System_Report.xlsx");
     }
 
+    function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+        const rows = globalTickets.map(t => [t.fields["Ticket ID"], t.fields.Company, t.fields["Submission Time"], t.fields["Resolution Time"], t.fields.Status]);
+        doc.text("HAKA Group - Ticket Performance", 14, 15);
+        doc.autoTable({ head: [['ID', 'Company', 'Sent At', 'Solved At', 'Status']], body: rows, startY: 22 });
+        doc.save("HAKA_Report.pdf");
+    }
+
     function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-    function logout() { localStorage.clear(); sessionStorage.clear(); location.reload(); }
+    function logout() { localStorage.clear(); location.reload(); }
 </script>
 </body>
 </html>
