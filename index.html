@@ -258,6 +258,9 @@
 
     function openSolve(id) {
         const t = globalTickets.find(x => x.id === id).fields;
+        const subTime = t["Submission Time"] ? new Date(t["Submission Time"]).toLocaleString() : 'N/A';
+    console.log("Ticket submitted at: " + subTime); 
+}
         document.getElementById('activeRecId').value = id;
         document.getElementById('det-id').innerText = "#" + (t["Ticket ID"] || 'N/A');
         document.getElementById('det-name').innerText = t["Employee Full Name"] || 'N/A';
@@ -330,7 +333,8 @@
 
     async function submitResolution() {
         const id = document.getElementById('activeRecId').value, user = JSON.parse(localStorage.getItem('hakaUser'));
-        const fields = { "Status": document.getElementById('newStatus').value, "Resolution Note": document.getElementById('resDesc').value, "Handled By IT": user.Name };
+        const resTime = new Date().toISOString();
+        const fields = { "Status": document.getElementById('newStatus').value, "Resolution Note": document.getElementById('resDesc').value, "Handled By IT": user.Name, "Resolution Time": resTime};
         await fetch(`https://api.airtable.com/v0/${B}/${encodeURIComponent(L)}/${id}`, { method:'PATCH', headers:{'Authorization':`Bearer ${T}`, 'Content-Type':'application/json'}, body:JSON.stringify({fields}) });
         closeModal(); loadData(user.Name);
     }
